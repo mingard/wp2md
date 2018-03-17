@@ -1,0 +1,23 @@
+{
+  "name": "@dadi/wp2md",
+  "version": "0.0.1",
+  "description": "",
+  "main": "bin/dadiwp2md",
+  "preferGlobal": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "dadiwp2md": "./bin/dadiwp2md"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cli-prompt": "^0.4.2",
+    "colors": "latest",
+    "commander": "2.9.0",
+    "mkdirp": "^0.5.1",
+    "turndown": "^4.0.1",
+    "xml2js": "^0.4.19"
+  }
+}

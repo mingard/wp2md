@@ -1,0 +1,115 @@
+#!/usr/bin/env node
+
+var fs = require('fs')
+var colors = require('colors')
+var os = require('os')
+var path = require('path')
+var pkg = require('../package.json')
+var program = require('commander')
+var prompt = require('cli-prompt')
+// var readline = require('readline')
+// var sortedObject = require('sorted-object')
+// require('shelljs/global')
+
+var _exit = process.exit
+var eol = os.EOL
+var version = pkg.version
+var cwd = process.cwd()
+
+// Re-assign process.exit because of commander
+process.exit = exit
+
+// CLI
+before(program, 'outputHelp', function () {
+  this.allowUnknownOption()
+})
+
+let inputFilePath
+let outputPath
+
+var versionOutput = '\n  DADI Wordpress to Markdown Converter (version ' + version + ')\n'
+
+program
+  .version(versionOutput)
+  .arguments('<inputXml> <outputPath>')
+  .usage('<path to input XML file> <output path for Markdown>')
+  .action((inputXml, outPath) => {
+    if (typeof inputXml === 'undefined' || typeof outPath === 'undefined') {
+		  process.exit(1)
+    } else {
+	    inputFilePath = path.resolve(inputXml)
+	    outputPath = path.resolve(outPath)
+
+	    return processIt(program, inputFilePath, outputPath).then(result => {
+	      if (result === 0) {
+	        console.log('Done')
+	      } else {
+	        console.log('Error')
+	      }
+
+	      return exit(result)
+	    })
+	  }
+  })
+
+program.on('--help', function () {
+  console.log('  Example usage:'.green)
+  console.log('')
+  console.log('    $ dadiwp2md export.xml ./posts')
+  console.log('')
+})
+
+program.parse(process.argv)
+
+if (typeof inputFilePath === 'undefined' || typeof outputPath === 'undefined') {
+  console.log(versionOutput)
+  program.help()
+  process.exit(1)
+}
+
+function processIt (program, inputFilePath, outputPath) {
+  return new Promise((resolve, reject) => {
+	  var convert = require(path.resolve('lib/convert.js'))
+	  return convert([inputFilePath, outputPath], result => {
+	  	console.log(result)
+	  	return resolve(result)
+	  })
+  })
+}
+
+/**
+ * Install a before function; AOP.
+ */
+function before (obj, method, fn) {
+  var old = obj[method]
+
+  obj[method] = function () {
+    fn.call(this)
+    old.apply(this, arguments)
+  }
+}
+
+/**
+ * Graceful exit for async STDIO
+ */
+function exit (code) {
+  // flush output for Node.js Windows pipe bug
+  // https://github.com/joyent/node/issues/6247 is just one bug example
+  // https://github.com/visionmedia/mocha/issues/333 has a good discussion
+  function done () {
+    if (!(draining--)) _exit(code)
+  }
+
+  var draining = 0
+  var streams = [process.stdout, process.stderr]
+
+  exit.exited = true
+
+  streams.forEach(function (stream) {
+    // submit empty write request and wait for completion
+    draining += 1
+    stream.write('', done)
+  })
+
+  done()
+}
